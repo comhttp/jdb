@@ -51,7 +51,7 @@ func main() {
 	}
 	defer db.Close()
 
-	// Initialize JDB (required)
+	// Initialize KV (required)
 	hub, err := jdb.NewHub(db, wrapLogger("jdb"))
 	if err != nil {
 		panic(err)
