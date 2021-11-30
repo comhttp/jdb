@@ -13,7 +13,9 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/compress v1.13.6 // indirect
+	github.com/leprosus/golang-daemon v1.0.1
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/rs/zerolog v1.26.0
 	github.com/sirupsen/logrus v1.8.1
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4 // indirect

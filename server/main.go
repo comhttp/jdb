@@ -2,12 +2,15 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"net/http"
-
-	"github.com/dgraph-io/badger/v3"
-	"github.com/sirupsen/logrus"
+	"os"
 
 	"github.com/comhttp/jdb"
+	"github.com/dgraph-io/badger/v3"
+	daemon "github.com/leprosus/golang-daemon"
+	"github.com/rs/zerolog"
+	"github.com/sirupsen/logrus"
 )
 
 var log = logrus.New()
@@ -36,14 +39,65 @@ func parseLogLevel(level string) logrus.Level {
 func main() {
 	// Get cmd line parameters
 	bind := flag.String("bind", "localhost:4338", "HTTP server bind in format addr:port")
-	dbfile := flag.String("dbdir", "data", "Path to strimertul database dir")
+	dbfile := flag.String("dbdir", "data", "Path to jdb database dir")
 	loglevel := flag.String("loglevel", "info", "Logging level (debug, info, warn, error)")
 	flag.Parse()
 
-	log.SetLevel(parseLogLevel(*loglevel))
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 
+	// Default level for this example is info, unless debug flag is present
+
+	switch *loglevel {
+	case "panic":
+		zerolog.SetGlobalLevel(zerolog.PanicLevel)
+	case "fatal":
+		zerolog.SetGlobalLevel(zerolog.FatalLevel)
+	case "error":
+		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+	case "warn":
+		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+	case "info":
+		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	case "debug":
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	case "trace":
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	default:
+		zerolog.SetGlobalLevel(zerolog.TraceLevel)
+	}
+
+	err := daemon.Init(os.Args[0], map[string]interface{}{}, *dbfile+"/daemonized.pid")
+	if err != nil {
+		return
+	}
+
+	switch os.Args[1] {
+	case "start":
+		err = daemon.Start()
+	case "stop":
+		err = daemon.Stop()
+	case "restart":
+		err = daemon.Stop()
+		err = daemon.Start()
+	case "status":
+		status := "stopped"
+		if daemon.IsRun() {
+			status = "started"
+		}
+
+		fmt.Printf("Application is %s\n", status)
+
+		return
+	case "":
+	default:
+		MainLoop(*dbfile, *bind)
+		fmt.Println("JORM node is on: :" + *bind)
+	}
+}
+
+func MainLoop(dbfile, bind string) {
 	// Loading routine
-	options := badger.DefaultOptions(*dbfile)
+	options := badger.DefaultOptions(dbfile)
 	options.Logger = wrapLogger("db")
 	db, err := badger.Open(options)
 	if err != nil {
@@ -63,5 +117,5 @@ func main() {
 	})
 
 	// Start HTTP server
-	http.ListenAndServe(*bind, nil)
+	http.ListenAndServe(bind, nil)
 }
